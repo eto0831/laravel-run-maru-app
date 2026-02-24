@@ -43,14 +43,13 @@ async function readLoop() {
             try {
                 const data = JSON.parse(line);
 
-                // 温湿度
-                if (data.ok) {
-                    $("#temp").textContent = String(data.t);
-                    $("#hum").textContent = String(data.h);
+                if (data.type === "dht") {
+                    if (data.ok) {
+                        $("#temp").textContent = String(data.t);
+                        $("#hum").textContent = String(data.h);
+                    }
                 }
 
-                // MPU6050
-                // TODO: gz も渡す
                 if (data.type === "mpu") {
                     window.applyRotation?.(data.gx, data.gy, data.gz);
                 }
