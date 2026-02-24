@@ -165,7 +165,13 @@
             線になります（自動保存）
         </div>
     </div>
-
+    <div id="sensorBox">
+        <button id="sensorConnect">センサー接続</button>
+        <div>温度: <span id="temp">--</span> ℃</div>
+        <div>湿度: <span id="hum">--</span> %</div>
+        <pre id="raw" style="white-space:pre-wrap;"></pre>
+    </div>
+    <script src="/js/sensor.js"></script>
     <script src="/js/config.js"></script>
     <script src="/js/main.js?v=2"></script>
 </body>
