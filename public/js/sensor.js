@@ -70,7 +70,7 @@ let rx = 0,
     rz = 0; // TODO: rz(=yaw) を追加
 
 const DEAD = 1200;
-const SCALE = 0.0000075;
+const SCALE = 0.0000065;
 
 let biasX = 0,
     biasY = 0,
