@@ -50,8 +50,9 @@ async function readLoop() {
                 }
 
                 // MPU6050
+                // TODO: gz も渡す
                 if (data.type === "mpu") {
-                    window.applyRotation?.(data.gx, data.gy);
+                    window.applyRotation?.(data.gx, data.gy, data.gz);
                 }
             } catch {
                 // JSONじゃない行は無視
@@ -66,39 +67,49 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // sensor.js の上の方に追加
 let rx = 0,
-    ry = 0;
+    ry = 0,
+    rz = 0; // TODO: rz(=yaw) を追加
+
 const DEAD = 1200;
 const SCALE = 0.0000075;
 
 let biasX = 0,
-    biasY = 0;
+    biasY = 0,
+    biasZ = 0; // TODO: Zのバイアスも取る
 let biasCount = 0;
 const BIAS_N = 50;
 
-function applyRotation(gx, gy) {
+function applyRotation(gx, gy, gz) {
     const viewer = document.querySelector("#viewer");
     if (!viewer) return;
 
-    // 起動直後だけゼロ点合わせ（この間センサー動かさない）
+    // TODO: 起動直後だけゼロ点合わせ（この間センサー動かさない）
     if (biasCount < BIAS_N) {
         biasX += gx;
         biasY += gy;
+        biasZ += gz;
         biasCount++;
         if (biasCount === BIAS_N) {
             biasX /= BIAS_N;
             biasY /= BIAS_N;
+            biasZ /= BIAS_N;
         }
         return;
     }
 
     gx -= biasX;
     gy -= biasY;
+    gz -= biasZ;
 
     if (Math.abs(gx) < DEAD) gx = 0;
     if (Math.abs(gy) < DEAD) gy = 0;
+    if (Math.abs(gz) < DEAD) gz = 0;
 
+    // TODO: yaw(Z) を積分する（机上クルクルはココが動く）
     ry += gx * SCALE;
     rx += gy * SCALE;
+    rz += gz * SCALE;
 
-    viewer.orientation = `${rx}rad ${ry}rad 0rad`;
+    // model-viewer の orientation は Roll/Pitch/Yaw を3つ与える例が公式デモにある :contentReference[oaicite:1]{index=1}
+    viewer.orientation = `${rx}rad ${ry}rad ${rz}rad`;
 }
