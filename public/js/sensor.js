@@ -106,7 +106,7 @@ function applyRotation(gx, gy, gz) {
 
     // TODO: yaw(Z) を積分する（机上クルクルはココが動く）
     ry += gx * SCALE;
-    rx += gy * SCALE;
+    rx += -gy * SCALE; // ← ここだけマイナス
     rz += gz * SCALE;
 
     // model-viewer の orientation は Roll/Pitch/Yaw を3つ与える例が公式デモにある :contentReference[oaicite:1]{index=1}

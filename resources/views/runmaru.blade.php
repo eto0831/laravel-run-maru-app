@@ -174,8 +174,8 @@
         <pre id="raw" style="white-space:pre-wrap;"></pre>
     </div>
     <div id="viewer-wrap">
-        <model-viewer id="viewer" src="/models/js_test.glb" camera-controls disable-tap interaction-prompt="none"
-            style="width:100%; height:400px;">
+        <model-viewer id="viewer" src="/models/js_test.glb" camera-controls exposure="0.8" environment-image="neutral"
+            shadow-intensity="0.5" disable-tap interaction-prompt="none" style="width:100%; height:400px;">
         </model-viewer>
 
 
