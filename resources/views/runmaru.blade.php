@@ -122,6 +122,8 @@
             font-size: 13px;
         }
     </style>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js">
+    </script>
 </head>
 
 <body>
@@ -171,9 +173,15 @@
         <div>湿度: <span id="hum">--</span> %</div>
         <pre id="raw" style="white-space:pre-wrap;"></pre>
     </div>
-    <script src="/js/sensor.js"></script>
-    <script src="/js/config.js"></script>
-    <script src="/js/main.js?v=2"></script>
+    <div id="viewer-wrap">
+        <model-viewer id="viewer" src="/models/js_test.glb" camera-controls style="width:100%; height:400px;">
+        </model-viewer>
+        <button id="connect">MPU 接続</button>
+
+
+        <script src="/js/config.js"></script>
+        <script src="/js/main.js"></script>
+        <script src="/js/sensor.js"></script>
 </body>
 
 </html>
