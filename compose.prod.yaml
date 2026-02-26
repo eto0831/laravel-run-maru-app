@@ -2,7 +2,7 @@ services:
   nginx:
     image: nginx:1.25-alpine
     ports:
-      - "80:80"
+      - "8080:80"
     volumes:
       - ./:/var/www/html:ro
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
@@ -10,6 +10,7 @@ services:
       - app
     networks:
       - appnet
+      - gw-net # TODO: 追加（gateway から見えるようにする）
 
   app:
     build:
@@ -20,7 +21,6 @@ services:
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
-      # .env はLaravelが読む（ここは最低限でOK）
     depends_on:
       mysql:
         condition: service_healthy
@@ -54,6 +54,8 @@ services:
 networks:
   appnet:
     driver: bridge
+  gw-net:
+    external: true # TODO: 追加（さっき作ったやつを使う）
 
 volumes:
   prod-mysql:
