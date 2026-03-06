@@ -51,7 +51,7 @@ async function readLoop() {
                 }
 
                 if (data.type === "mpu") {
-                    window.applyRotation?.(data.gx, data.gy, data.gz);
+                    applyRotation?.(data.gx, data.gy, data.gz);
                 }
             } catch {
                 // JSONじゃない行は無視

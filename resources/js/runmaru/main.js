@@ -1,3 +1,6 @@
+import "./sensor.js";
+import { APP_CONFIG } from "./config.js";
+
 // ===============================
 // Run Maru + Google Maps Course
 // main.js（Laravel API / DB 版）
@@ -7,7 +10,7 @@
 // Google Maps loader (config.js からキーを読む)
 // ===============================
 const loadGoogleMaps = () => {
-    const apiKey = window.APP_CONFIG?.GOOGLE_MAPS_API_KEY;
+    const apiKey = APP_CONFIG?.GOOGLE_MAPS_API_KEY;
 
     if (!apiKey) {
         alert("Google Maps API Key が見つかりません（config.js を確認）");
@@ -412,7 +415,7 @@ const initMap = () => {
     map = new google.maps.Map(mapEl, {
         center: { lat: 35.681236, lng: 139.767125 }, // 東京駅
         zoom: 14,
-        mapId: window.APP_CONFIG?.GOOGLE_MAPS_MAP_ID,
+        mapId: APP_CONFIG?.GOOGLE_MAPS_MAP_ID,
         clickableIcons: false,
         streetViewControl: false,
         mapTypeControl: false,

@@ -180,9 +180,7 @@
         </model-viewer>
 
 
-        <script src="/js/config.js"></script>
-        <script src="/js/main.js"></script>
-        <script src="/js/sensor.js"></script>
+        @vite(['resources/js/app.js'])
 </body>
 
 </html>
