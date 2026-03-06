@@ -1,2 +1,4 @@
 import "./bootstrap";
-import "./runmaru/main.js";
+import { bootRunmaru } from "./runmaru/app.js";
+
+bootRunmaru();

@@ -1,6 +1,59 @@
 import "./sensor.js";
 import { APP_CONFIG } from "./config.js";
 
+export function initRunmaru() {
+    // ===============================
+    // 初期化
+    // ===============================
+    document.addEventListener("DOMContentLoaded", async () => {
+        document
+            .querySelector("#toggleToday")
+            ?.addEventListener("click", toggleToday);
+
+        document.querySelector("#prev")?.addEventListener("click", async () => {
+            view =
+                view.m === 1
+                    ? { y: view.y - 1, m: 12 }
+                    : { y: view.y, m: view.m - 1 };
+            await render();
+        });
+
+        document.querySelector("#next")?.addEventListener("click", async () => {
+            view =
+                view.m === 12
+                    ? { y: view.y + 1, m: 1 }
+                    : { y: view.y, m: view.m + 1 };
+            await render();
+        });
+
+        document
+            .querySelector("#jumpToday")
+            ?.addEventListener("click", async () => {
+                const t = today();
+                view = { y: t.y, m: t.m };
+                selectedDateKey = dateKey(t.y, t.m, t.d);
+                await render();
+                await loadCourseToMap();
+            });
+
+        document
+            .querySelector("#clearAll")
+            ?.addEventListener("click", clearAll);
+
+        renderDow();
+
+        // 最初の月marksを取って描画
+        await render();
+
+        // mapがまだでもヒント/タイトルは更新しておく
+        updateMapTitle();
+        updateMapHint(getCourseFromCache(selectedDateKey));
+
+        // Google Maps を動的ロード（完了後 callback=initMap）
+        loadGoogleMaps();
+    });
+}
+
 // ===============================
 // Run Maru + Google Maps Course
 // main.js（Laravel API / DB 版）
@@ -485,52 +538,3 @@ const initMap = () => {
 
 // callback から見えるように window に生やす
 window.initMap = initMap;
-
-// ===============================
-// 初期化
-// ===============================
-document.addEventListener("DOMContentLoaded", async () => {
-    document
-        .querySelector("#toggleToday")
-        ?.addEventListener("click", toggleToday);
-
-    document.querySelector("#prev")?.addEventListener("click", async () => {
-        view =
-            view.m === 1
-                ? { y: view.y - 1, m: 12 }
-                : { y: view.y, m: view.m - 1 };
-        await render();
-    });
-
-    document.querySelector("#next")?.addEventListener("click", async () => {
-        view =
-            view.m === 12
-                ? { y: view.y + 1, m: 1 }
-                : { y: view.y, m: view.m + 1 };
-        await render();
-    });
-
-    document
-        .querySelector("#jumpToday")
-        ?.addEventListener("click", async () => {
-            const t = today();
-            view = { y: t.y, m: t.m };
-            selectedDateKey = dateKey(t.y, t.m, t.d);
-            await render();
-            await loadCourseToMap();
-        });
-
-    document.querySelector("#clearAll")?.addEventListener("click", clearAll);
-
-    renderDow();
-
-    // 最初の月marksを取って描画
-    await render();
-
-    // mapがまだでもヒント/タイトルは更新しておく
-    updateMapTitle();
-    updateMapHint(getCourseFromCache(selectedDateKey));
-
-    // Google Maps を動的ロード（完了後 callback=initMap）
-    loadGoogleMaps();
-});
