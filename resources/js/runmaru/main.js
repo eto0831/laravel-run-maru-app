@@ -1,5 +1,11 @@
 import "./sensor.js";
 import { APP_CONFIG } from "./config.js";
+import {
+    fetchMarksForMonth,
+    saveMark,
+    fetchCourseForDay,
+    saveCourse,
+} from "./runmaruApi.js";
 
 export function initRunmaru() {
     // ===============================
@@ -87,28 +93,6 @@ const loadGoogleMaps = () => {
 };
 
 // ===============================
-// API helper
-// ===============================
-async function apiGet(url) {
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
-    if (!res.ok) throw new Error(`GET ${url} failed: ${res.status}`);
-    return res.json();
-}
-
-async function apiPut(url, body) {
-    const res = await fetch(url, {
-        method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-        },
-        body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`PUT ${url} failed: ${res.status}`);
-    return res.json();
-}
-
-// ===============================
 // 日付ユーティリティ
 // ===============================
 const pad2 = (n) => String(n).padStart(2, "0");
@@ -145,12 +129,11 @@ let isBusy = false;
 // Marks API
 // ===============================
 const loadMarksForMonth = async (y, m) => {
-    const data = await apiGet(`/api/runmaru/marks?y=${y}&m=${m}`);
-    marks = data?.marks && typeof data.marks === "object" ? data.marks : {};
+    marks = await fetchMarksForMonth(y, m);
 };
 
 const setMarkOnServer = async (dayKey, marked) => {
-    await apiPut("/api/runmaru/mark", { day: dayKey, marked });
+    await saveMark(dayKey, marked);
 };
 
 // ===============================
@@ -165,10 +148,7 @@ const loadCourseForDay = async (dayKey) => {
     // 既にキャッシュあるならそれを使う（必要なら強制リロードも作れる）
     if (Array.isArray(courseCache[dayKey])) return courseCache[dayKey];
 
-    const data = await apiGet(
-        `/api/runmaru/course?day=${encodeURIComponent(dayKey)}`,
-    );
-    const pathArr = Array.isArray(data?.path) ? data.path : [];
+    const pathArr = await fetchCourseForDay(dayKey);
     courseCache[dayKey] = pathArr;
     return pathArr;
 };
@@ -176,10 +156,7 @@ const loadCourseForDay = async (dayKey) => {
 const saveCourseForDay = async (dayKey, pathArr) => {
     // 先にキャッシュ更新（体感が速い）
     courseCache[dayKey] = Array.isArray(pathArr) ? pathArr : [];
-    await apiPut("/api/runmaru/course", {
-        day: dayKey,
-        path: courseCache[dayKey],
-    });
+    await saveCourse(dayKey, courseCache[dayKey]);
 };
 
 // ===============================
