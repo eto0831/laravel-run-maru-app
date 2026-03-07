@@ -1,4 +1,3 @@
-import { APP_CONFIG } from "./config.js";
 import "./sensor.js";
 
 import {
@@ -24,6 +23,8 @@ import {
     showMyLocation,
     createMap,
 } from "./map.js";
+
+import { createCourseStore } from "./course.js";
 
 export function initRunmaru() {
     // ===============================
@@ -71,7 +72,7 @@ export function initRunmaru() {
 
         // mapがまだでもヒント/タイトルは更新しておく
         updateMapTitle(selectedDateKey);
-        updateMapHint(getCourseFromCache(selectedDateKey));
+        updateMapHint(courseStore.getFromCache(selectedDateKey));
 
         // Google Maps を動的ロード（完了後 callback=initMap）
         loadGoogleMaps();
@@ -86,10 +87,9 @@ export function initRunmaru() {
 // ===============================
 // 状態（DBが正）
 // ===============================
+
 // marks: { "YYYY-MM-DD": true }
 let marks = {};
-// コースキャッシュ: { "YYYY-MM-DD": [{lat,lng}, ...] }
-let courseCache = {};
 
 let view = (() => {
     const t = today();
@@ -118,25 +118,10 @@ const setMarkOnServer = async (dayKey, marked) => {
 // ===============================
 // Course API
 // ===============================
-const getCourseFromCache = (dayKey) => {
-    const arr = courseCache[dayKey];
-    return Array.isArray(arr) ? arr : [];
-};
-
-const loadCourseForDay = async (dayKey) => {
-    // 既にキャッシュあるならそれを使う（必要なら強制リロードも作れる）
-    if (Array.isArray(courseCache[dayKey])) return courseCache[dayKey];
-
-    const pathArr = await fetchCourseForDay(dayKey);
-    courseCache[dayKey] = pathArr;
-    return pathArr;
-};
-
-const saveCourseForDay = async (dayKey, pathArr) => {
-    // 先にキャッシュ更新（体感が速い）
-    courseCache[dayKey] = Array.isArray(pathArr) ? pathArr : [];
-    await saveCourse(dayKey, courseCache[dayKey]);
-};
+const courseStore = createCourseStore({
+    fetchCourseForDay,
+    saveCourse,
+});
 
 // ===============================
 // Google Maps state
@@ -150,7 +135,7 @@ const loadCourseToMap = async () => {
     updateMapTitle(selectedDateKey);
 
     try {
-        const course = await loadCourseForDay(selectedDateKey);
+        const course = await courseStore.loadForDay(selectedDateKey);
         updateMapHint(course);
 
         if (!map || !polyline) return;
@@ -202,6 +187,8 @@ const toggleToday = async () => {
 // ここでは「今ロード済みのmarks + キャッシュ済みコース」を消す。
 // 完全に全月消すなら、Laravel側で一括削除エンドポイントを作るのが正道。
 const clearAll = async () => {
+    console.log("marks keys:", Object.keys(marks));
+    console.log("course keys:", courseStore.keys());
     const ok = confirm("記録（⭕️とコース）を全部消します。よろしいですか？");
     if (!ok) return;
     if (isBusy) return;
@@ -216,11 +203,13 @@ const clearAll = async () => {
         marks = {};
 
         // 2) コースは「空配列」で上書き（キャッシュ分だけ）
-        const ckeys = Object.keys(courseCache);
+        const ckeys = courseStore.keys();
+
         for (const k of ckeys) {
-            await saveCourseForDay(k, []);
+            await courseStore.saveForDay(k, []);
         }
-        courseCache = {};
+
+        courseStore.clearCache();
 
         // 3) 画面状態も初期化
         path = [];
@@ -285,7 +274,7 @@ const initMap = () => {
         updateMapHint(path);
 
         try {
-            await saveCourseForDay(selectedDateKey, path);
+            await courseStore.saveForDay(selectedDateKey, path);
         } catch (err) {
             alert("コース保存に失敗しました（通信/サーバを確認）");
             console.error(err);
@@ -310,7 +299,7 @@ const initMap = () => {
                 path = [];
                 polyline.setPath(path);
                 updateMapHint(path);
-                await saveCourseForDay(selectedDateKey, []);
+                await courseStore.saveForDay(selectedDateKey, []);
             } catch (e) {
                 alert("削除に失敗しました（通信/サーバを確認）");
                 console.error(e);

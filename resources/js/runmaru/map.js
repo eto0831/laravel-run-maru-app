@@ -112,6 +112,9 @@ export const showMyLocation = (map) => {
     );
 };
 
+// ===============================
+// 地図＋コース描画レイヤーの初期化
+// ===============================
 export const createMap = () => {
     const mapEl = document.querySelector("#map");
     if (!mapEl) return null;
