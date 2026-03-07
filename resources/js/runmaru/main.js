@@ -1,5 +1,6 @@
-import "./sensor.js";
 import { APP_CONFIG } from "./config.js";
+import "./sensor.js";
+
 import {
     fetchMarksForMonth,
     saveMark,
@@ -13,7 +14,16 @@ import {
     renderDow,
     renderHeader,
     renderGrid,
-} from "./calender.js";
+} from "./calendar.js";
+
+import {
+    loadGoogleMaps,
+    updateMapTitle,
+    updateMapHint,
+    fitCourse,
+    showMyLocation,
+    createMap,
+} from "./map.js";
 
 export function initRunmaru() {
     // ===============================
@@ -60,7 +70,7 @@ export function initRunmaru() {
         await render();
 
         // mapがまだでもヒント/タイトルは更新しておく
-        updateMapTitle();
+        updateMapTitle(selectedDateKey);
         updateMapHint(getCourseFromCache(selectedDateKey));
 
         // Google Maps を動的ロード（完了後 callback=initMap）
@@ -72,33 +82,6 @@ export function initRunmaru() {
 // Run Maru + Google Maps Course
 // main.js（Laravel API / DB 版）
 // ===============================
-
-// ===============================
-// Google Maps loader (config.js からキーを読む)
-// ===============================
-const loadGoogleMaps = () => {
-    const apiKey = APP_CONFIG?.GOOGLE_MAPS_API_KEY;
-
-    if (!apiKey) {
-        alert("Google Maps API Key が見つかりません（config.js を確認）");
-        return;
-    }
-
-    // 二重読み込み防止
-    if (document.querySelector('script[data-gmaps="1"]')) return;
-
-    const script = document.createElement("script");
-    script.dataset.gmaps = "1";
-    script.src =
-        `https://maps.googleapis.com/maps/api/js` +
-        `?key=${encodeURIComponent(apiKey)}` +
-        `&libraries=geometry,marker` +
-        `&callback=initMap` +
-        `&loading=async`;
-
-    script.async = true;
-    document.head.appendChild(script);
-};
 
 // ===============================
 // 状態（DBが正）
@@ -162,57 +145,9 @@ let map;
 let polyline;
 let path = []; // selectedDateKey の編集パス
 
-// 距離計算（geometryライブラリが必要）
-const computeDistanceKm = (pathArr) => {
-    if (!pathArr || pathArr.length < 2) return 0;
-
-    if (
-        typeof window.google === "undefined" ||
-        !window.google.maps?.geometry?.spherical?.computeLength
-    ) {
-        return 0;
-    }
-
-    const latLngs = pathArr.map(
-        (p) => new window.google.maps.LatLng(p.lat, p.lng),
-    );
-    const meters = window.google.maps.geometry.spherical.computeLength(latLngs);
-    return meters / 1000;
-};
-
-const updateMapTitle = () => {
-    const el = document.querySelector("#map-title");
-    if (!el) return;
-    el.textContent = `コース（${selectedDateKey}）`;
-};
-
-const updateMapHint = (courseArr) => {
-    const el = document.querySelector("#map-hint");
-    if (!el) return;
-
-    const course = Array.isArray(courseArr) ? courseArr : [];
-    const km = computeDistanceKm(course);
-
-    if (course.length < 2) {
-        el.textContent =
-            "地図をクリックして点を追加 → 線になります（自動保存）。2点以上で距離が出ます。";
-    } else {
-        el.textContent = `点:${course.length}  距離:${km.toFixed(
-            2,
-        )} km（クリックで点を追加 / コース消すで削除）`;
-    }
-};
-
-const fitCourse = () => {
-    if (!map || !path || path.length === 0) return;
-    const bounds = new google.maps.LatLngBounds();
-    for (const p of path) bounds.extend(p);
-    map.fitBounds(bounds);
-};
-
 // 選択中の日付のコースを API→地図へ反映（async）
 const loadCourseToMap = async () => {
-    updateMapTitle();
+    updateMapTitle(selectedDateKey);
 
     try {
         const course = await loadCourseForDay(selectedDateKey);
@@ -223,40 +158,11 @@ const loadCourseToMap = async () => {
         path = course;
         polyline.setPath(path);
 
-        if (path.length >= 2) fitCourse();
+        if (path.length >= 2) fitCourse(map, path);
     } catch (e) {
         console.error(e);
         updateMapHint([]); // 取れない時は空扱い
     }
-};
-
-// 現在地表示（AdvancedMarker版）
-const showMyLocation = () => {
-    if (!navigator.geolocation) {
-        alert("このブラウザは位置情報に対応していません");
-        return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-        (pos) => {
-            const me = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-            if (!map) return;
-
-            map.setCenter(me);
-            map.setZoom(16);
-
-            new google.maps.marker.AdvancedMarkerElement({
-                position: me,
-                map,
-                title: "現在地",
-            });
-        },
-        (err) => {
-            alert(`現在地を取得できませんでした: ${err.message}`);
-            console.error(err);
-        },
-        { enableHighAccuracy: true, timeout: 30000, maximumAge: 60000 },
-    );
 };
 
 // ===============================
@@ -344,13 +250,13 @@ const renderSync = () => {
         onSelectDate: async (key) => {
             selectedDateKey = key;
             renderSync();
-            await loadCourseToMap(key);
+            await loadCourseToMap();
         },
         onToggleMark: async (key) => {
             await toggle(key);
         },
     });
-    updateMapTitle();
+    updateMapTitle(selectedDateKey);
 };
 
 const render = async () => {
@@ -362,24 +268,11 @@ const render = async () => {
 // Google Maps init (callback=initMap)
 // ===============================
 const initMap = () => {
-    const mapEl = document.querySelector("#map");
-    if (!mapEl) return;
+    const created = createMap();
+    if (!created) return;
 
-    map = new google.maps.Map(mapEl, {
-        center: { lat: 35.681236, lng: 139.767125 }, // 東京駅
-        zoom: 14,
-        mapId: APP_CONFIG?.GOOGLE_MAPS_MAP_ID,
-        clickableIcons: false,
-        streetViewControl: false,
-        mapTypeControl: false,
-        fullscreenControl: false,
-    });
-
-    polyline = new google.maps.Polyline({
-        map,
-        path: [],
-        geodesic: true,
-    });
+    map = created.map;
+    polyline = created.polyline;
 
     // 地図クリックで点追加 → 自動保存（API）
     map.addListener("click", async (e) => {
@@ -428,12 +321,12 @@ const initMap = () => {
         });
 
     document.querySelector("#courseFit")?.addEventListener("click", () => {
-        fitCourse();
+        fitCourse(map, path);
     });
 
     // 初回ロード
     loadCourseToMap();
-    showMyLocation();
+    showMyLocation(map);
 };
 
 // callback から見えるように window に生やす
