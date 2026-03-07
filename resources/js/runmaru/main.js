@@ -7,6 +7,14 @@ import {
     saveCourse,
 } from "./runmaruApi.js";
 
+import {
+    dateKey,
+    today,
+    renderDow,
+    renderHeader,
+    renderGrid,
+} from "./calender.js";
+
 export function initRunmaru() {
     // ===============================
     // 初期化
@@ -91,18 +99,6 @@ const loadGoogleMaps = () => {
     script.async = true;
     document.head.appendChild(script);
 };
-
-// ===============================
-// 日付ユーティリティ
-// ===============================
-const pad2 = (n) => String(n).padStart(2, "0");
-const dateKey = (y, m, d) => `${y}-${pad2(m)}-${pad2(d)}`; // m:1-12
-const today = () => {
-    const t = new Date();
-    return { y: t.getFullYear(), m: t.getMonth() + 1, d: t.getDate() };
-};
-const daysInMonth = (y, m) => new Date(y, m, 0).getDate(); // m:1-12
-const firstDow = (y, m) => new Date(y, m - 1, 1).getDay(); // 0:Sun
 
 // ===============================
 // 状態（DBが正）
@@ -334,100 +330,27 @@ const clearAll = async () => {
     }
 };
 
-// ===============================
-// 描画（カレンダー）
-// ===============================
-const renderDow = () => {
-    const dow = document.querySelector("#dow");
-    const labels = ["日", "月", "火", "水", "木", "金", "土"];
-    dow.innerHTML = labels.map((l) => `<div class="dow">${l}</div>`).join("");
-};
-
-const renderHeader = () => {
-    document.querySelector("#title").textContent = `${view.y}年 ${view.m}月`;
-
-    const t = today();
-    const key = dateKey(t.y, t.m, t.d);
-
-    const btn = document.querySelector("#toggleToday");
-    if (btn) btn.textContent = marks[key] ? "今日の⭕️を外す" : "今日を⭕️にする";
-
-    document.querySelector("#status").textContent = marks[key]
-        ? `✅ 今日は⭕️（${key}）`
-        : `⬜ 今日は未記録（${key}）`;
-};
-
-const renderGrid = () => {
-    const grid = document.querySelector("#grid");
-    grid.innerHTML = "";
-
-    const { y, m } = view;
-    const total = daysInMonth(y, m);
-    const start = firstDow(y, m);
-
-    // 空白セル
-    for (let i = 0; i < start; i++) {
-        const div = document.createElement("div");
-        div.className = "cell muted";
-        div.style.cursor = "default";
-        div.innerHTML = `<div class="day"> </div><div class="mark"> </div>`;
-        grid.append(div);
-    }
-
+// render は「描画だけ（同期）」と「月marksロード込み（非同期）」に分ける
+const renderSync = () => {
     const t = today();
     const todayKeyStr = dateKey(t.y, t.m, t.d);
 
-    for (let d = 1; d <= total; d++) {
-        const key = dateKey(y, m, d);
-        const div = document.createElement("div");
-        div.className = "cell";
+    renderHeader({ view, marks, todayKey: todayKeyStr });
 
-        // 今日枠
-        if (key === todayKeyStr) div.classList.add("today");
-
-        // 選択中の日（コース編集対象）
-        if (key === selectedDateKey) {
-            div.style.background = "#f0f7ff";
-            div.style.border = "2px solid #3b82f6";
-        }
-
-        const marked = !!marks[key];
-        div.innerHTML = `
-      <div class="day">${d}</div>
-      <div class="mark">${marked ? "⭕️" : ""}</div>
-    `;
-
-        // クリックで：①日付選択（コース用） ② Shift+クリックで⭕️もトグル
-        div.addEventListener("click", async (e) => {
+    renderGrid({
+        view,
+        marks,
+        selectedDateKey,
+        onSelectDate: async (key) => {
             selectedDateKey = key;
-            renderSync(); // 選択の見た目更新
-            await loadCourseToMap(); // 地図にその日のコースを反映（API）
-
-            if (e.shiftKey) {
-                await toggle(key);
-            }
-        });
-
-        grid.append(div);
-    }
-
-    // 端数埋め
-    const cells = start + total;
-    const remainder = (7 - (cells % 7)) % 7;
-    for (let i = 0; i < remainder; i++) {
-        const div = document.createElement("div");
-        div.className = "cell muted";
-        div.style.cursor = "default";
-        div.innerHTML = `<div class="day"> </div><div class="mark"> </div>`;
-        grid.append(div);
-    }
-};
-
-// render は「描画だけ（同期）」と「月marksロード込み（非同期）」に分ける
-const renderSync = () => {
-    renderHeader();
-    renderGrid();
-    updateMapTitle(); // mapが無くてもタイトルは更新できる
+            renderSync();
+            await loadCourseToMap(key);
+        },
+        onToggleMark: async (key) => {
+            await toggle(key);
+        },
+    });
+    updateMapTitle();
 };
 
 const render = async () => {
