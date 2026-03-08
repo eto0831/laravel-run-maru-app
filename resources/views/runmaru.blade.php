@@ -178,9 +178,15 @@
         <model-viewer id="viewer" src="/models/js_test.glb" camera-controls exposure="0.8" environment-image="neutral"
             shadow-intensity="0.5" disable-tap interaction-prompt="none" style="width:100%; height:400px;">
         </model-viewer>
+    </div>
+
+    <hr>
+    <button id="btnCurrentLocation">現在地テスト</button>
+    <pre id="result"></pre>
 
 
-        @vite(['resources/js/app.js'])
+    @vite(['resources/js/app.js'])
+    <script src="/js/weather-test.js"></script>
 </body>
 
 </html>

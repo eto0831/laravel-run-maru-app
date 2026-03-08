@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\RunMaruService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+
 
 class RunMaruController extends Controller
 {
@@ -48,5 +50,29 @@ class RunMaruController extends Controller
 
         $this->service->setCourse($day, $path);
         return response()->json(['ok' => true]);
+    }
+
+    public function getWeather(Request $req)
+    {
+        $lat = $req->query('lat');
+        $lon = $req->query('lon');
+
+        $response = Http::get('https://api.open-meteo.com/v1/forecast', [
+            'latitude' => $lat,
+            'longitude' => $lon,
+            'hourly' => 'precipitation_probability',
+            'forecast_days' => 3,
+            'timezone' => 'Asia/Tokyo',
+        ]);
+
+        $data = $response->json();
+
+
+        return response()->json([
+            'lat' => $data['latitude'],
+            'lon' => $data['longitude'],
+            'times' => $data['hourly']['time'],
+            'rain_prob' => $data['hourly']['precipitation_probability'],
+        ]);
     }
 }
