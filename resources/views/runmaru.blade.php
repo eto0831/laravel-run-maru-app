@@ -184,9 +184,22 @@
     <button id="btnCurrentLocation">現在地テスト</button>
     <pre id="result"></pre>
 
+    <hr>
+    <button id="btnShowMap">現在地マップ表示</button>
+    <pre id="mapResult"></pre>
+    <div id="testMap" style="width: 100%; height: 320px;"></div>
+
+    <hr>
+    <button id="btnShowLineMap">線用マップ表示</button>
+    <pre id="lineMapResult"></pre>
+    <div id="testLineMap" style="width: 100%; height: 320px;"></div>
+
 
     @vite(['resources/js/app.js'])
+    <script src="/js/config.js"></script>
+    <script src="/js/utils.js"></script>
     <script src="/js/weather-test.js"></script>
+    <script src="/js/map-test.js"></script>
 </body>
 
 </html>

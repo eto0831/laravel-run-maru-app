@@ -1,10 +1,10 @@
-const $ = (q) => document.querySelector(q);
+// const $ = (q) => document.querySelector(q);
 
-function getCurrentPositionAsync() {
-    return new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject);
-    });
-}
+// function getCurrentPositionAsync() {
+//     return new Promise((resolve, reject) => {
+//         navigator.geolocation.getCurrentPosition(resolve, reject);
+//     });
+// }
 
 async function testCurrentLocation() {
     try {
