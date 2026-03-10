@@ -97,6 +97,7 @@ async function showLineMap() {
 
             polyline.setPath(linePoints);
             renderDistance();
+            renderSegmentDistance();
 
             $("#lineMapResult").textContent =
                 `点の数: ${linePoints.length}\n` +
@@ -123,6 +124,7 @@ function undoLastPoint() {
 
     polyline.setPath(linePoints);
     renderDistance();
+    renderSegmentDistance();
 
     if (linePoints.length === 0) {
         $("#lineMapResult").textContent = "点が０個になりました。";
@@ -153,6 +155,7 @@ function clearAllPointForDay() {
     // 線も消す
     polyline.setPath(linePoints);
     renderDistance();
+    renderSegmentDistance();
 
     $("#lineMapResult").textContent = "全て削除しました";
 }
@@ -183,6 +186,27 @@ function renderDistance() {
 
     const distance = showDistanceAlongPath(linePoints);
     el.textContent = `距離: ${distance.toFixed(2)} km`;
+}
+
+function getLastSegmentDistance(points) {
+    if (!points || points.length < 2) return 0;
+    const last = points[points.length - 1];
+    const prev = points[points.length - 2];
+
+    const p1 = new google.maps.LatLng(prev.lat, prev.lng);
+    const p2 = new google.maps.LatLng(last.lat, last.lng);
+
+    const meters = google.maps.geometry.spherical.computeDistanceBetween(
+        p1,
+        p2,
+    );
+    return meters;
+}
+
+function renderSegmentDistance() {
+    const meters = getLastSegmentDistance(linePoints);
+
+    $("#segmentDistance").textContent = `この区間: ${meters.toFixed(0)} m`;
 }
 
 $("#btnShowLineMap")?.addEventListener("click", showLineMap);

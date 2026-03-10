@@ -195,6 +195,7 @@
     <button id="clearAllPoints">ClearAllPoints</button>
     <pre id="lineMapResult"></pre>
     <pre id="mapDistance"></pre>
+    <pre id="segmentDistance">この区間: 0m</pre>
     <div id="testLineMap" style="width: 100%; height: 320px;"></div>
 
 
