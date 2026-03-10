@@ -193,9 +193,15 @@
     <button id="btnShowLineMap">線用マップ表示</button>
     <button id="btnUndoPoint">Undo</button>
     <button id="clearAllPoints">ClearAllPoints</button>
+    <button id="btnStartTrack">記録開始</button>
+    <button id="btnStopTrack">記録停止</button>
+    <button id="btnDrawWalkingRoute">歩行者ルートで結ぶ</button>
     <pre id="lineMapResult"></pre>
     <pre id="mapDistance"></pre>
     <pre id="segmentDistance">この区間: 0m</pre>
+    <pre id="trackStatus">停止中</pre>
+    <pre id="mapDistance">距離: 0.00km</pre>
+    <pre id="routeResult"></pre>
     <div id="testLineMap" style="width: 100%; height: 320px;"></div>
 
 
