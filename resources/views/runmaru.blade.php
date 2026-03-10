@@ -191,7 +191,10 @@
 
     <hr>
     <button id="btnShowLineMap">線用マップ表示</button>
+    <button id="btnUndoPoint">Undo</button>
+    <button id="clearAllPoints">ClearAllPoints</button>
     <pre id="lineMapResult"></pre>
+    <pre id="mapDistance"></pre>
     <div id="testLineMap" style="width: 100%; height: 320px;"></div>
 
 

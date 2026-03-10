@@ -1,12 +1,13 @@
 // const $ = (q) => document.querySelector(q);
-let map;
-let marker;
 
 // function getCurrentPositionAsync() {
 //     return new Promise((resolve, reject) => {
 //         navigator.geolocation.getCurrentPosition(resolve, reject);
 //     });
 // }
+
+let map;
+let marker;
 
 async function showCurrentLocationMap() {
     try {
@@ -50,6 +51,7 @@ let polyline;
 async function showLineMap() {
     try {
         const pos = await getCurrentPositionAsync();
+        console.log(pos.coords);
 
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
@@ -94,6 +96,7 @@ async function showLineMap() {
             lineMarkers.push(marker);
 
             polyline.setPath(linePoints);
+            renderDistance();
 
             $("#lineMapResult").textContent =
                 `点の数: ${linePoints.length}\n` +
@@ -105,4 +108,83 @@ async function showLineMap() {
     }
 }
 
+function undoLastPoint() {
+    if (linePoints.length === 0) {
+        $("#lineMapResult").textContent = "戻せる点がありません";
+        return;
+    }
+
+    linePoints.pop();
+
+    const lastMarker = lineMarkers.pop();
+    if (lastMarker) {
+        lastMarker.map = null;
+    }
+
+    polyline.setPath(linePoints);
+    renderDistance();
+
+    if (linePoints.length === 0) {
+        $("#lineMapResult").textContent = "点が０個になりました。";
+        return;
+    }
+    const lastPoint = linePoints[linePoints.length - 1];
+    $("#lineMapResult").textContent =
+        `点の数: ${linePoints.length}\n` +
+        `最後の点: ${lastPoint.lat}, ${lastPoint.lng}`;
+}
+
+function clearAllPointForDay() {
+    // 削除対象があるか確認
+    if (linePoints.length === 0) {
+        $("#lineMapResult").textContent = "削除できる点がありません";
+        return;
+    }
+
+    // マーカを地図から外す必要がある
+    lineMarkers.forEach((marker) => {
+        marker.map = null;
+    });
+
+    // 配列リセット
+    linePoints = [];
+    lineMarkers = [];
+
+    // 線も消す
+    polyline.setPath(linePoints);
+    renderDistance();
+
+    $("#lineMapResult").textContent = "全て削除しました";
+}
+
+function showDistanceAlongPath(pathArr) {
+    if (!pathArr || pathArr.length < 2) return 0;
+
+    if (
+        typeof window.google === "undefined" ||
+        !window.google.maps?.geometry?.spherical?.computeLength
+    ) {
+        console.log("geometry library が読み込まれていません");
+        return 0;
+    }
+
+    const latLngs = pathArr.map(
+        (p) => new window.google.maps.LatLng(p.lat, p.lng),
+    );
+
+    const meters = window.google.maps.geometry.spherical.computeLength(latLngs);
+
+    return meters / 1000;
+}
+
+function renderDistance() {
+    const el = $("#mapDistance");
+    if (!el) return;
+
+    const distance = showDistanceAlongPath(linePoints);
+    el.textContent = `距離: ${distance.toFixed(2)} km`;
+}
+
 $("#btnShowLineMap")?.addEventListener("click", showLineMap);
+$("#btnUndoPoint")?.addEventListener("click", undoLastPoint);
+$("#clearAllPoints")?.addEventListener("click", clearAllPointForDay);
