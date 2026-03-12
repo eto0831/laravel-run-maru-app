@@ -228,12 +228,12 @@ let watchId = null;
 
 function startTracking() {
     if (!navigator.geolocation) {
-        $("trackStatus").textContent = "このブラウザでは位置情報が使えません";
+        $("#trackStatus").textContent = "このブラウザでは位置情報が使えません";
         return;
     }
 
     if (!lineMap || !polyline) {
-        $("trackStatus").textContent = "先に線用マップを表示してください";
+        $("#trackStatus").textContent = "先に線用マップを表示してください";
         return;
     }
 
