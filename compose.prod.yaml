@@ -9,8 +9,10 @@ services:
     depends_on:
       - app
     networks:
-      - appnet
-      - gw-net # TODO: 追加（gateway から見えるようにする）
+      appnet:
+      gw-net:
+        aliases:
+          - runmaru-web
 
   app:
     build:
