@@ -1,7 +1,20 @@
 let port;
 let reader;
 
-const $ = (q) => document.querySelector(q);
+let rx = 0;
+let ry = 0;
+let rz = 0;
+
+const DEAD = 1200;
+const SCALE = 0.0000065;
+
+let biasX = 0;
+let biasY = 0;
+let biasZ = 0;
+let biasCount = 0;
+const BIAS_N = 50;
+
+// const $ = (q) => document.querySelector(q);
 
 async function connectSerial() {
     // なぜ：対応ブラウザか確認して落ち方をわかりやすくする
@@ -10,15 +23,19 @@ async function connectSerial() {
         return;
     }
 
-    // ユーザー操作必須（ボタン押下でしか開けない）
-    port = await navigator.serial.requestPort();
-    await port.open({ baudRate: 115200 });
+    try {
+        port = await navigator.serial.requestPort();
+        await port.open({ baudRate: 115200 });
 
-    const decoder = new TextDecoderStream();
-    port.readable.pipeTo(decoder.writable);
-    reader = decoder.readable.getReader();
+        const decoder = new TextDecoderStream();
+        port.readable.pipeTo(decoder.writable);
+        reader = decoder.readable.getReader();
 
-    readLoop();
+        readLoop();
+    } catch (err) {
+        console.error(err);
+        alert("シリアル接続に失敗しました");
+    }
 }
 
 async function readLoop() {
@@ -31,22 +48,27 @@ async function readLoop() {
 
         buf += value;
 
-        // 1行（\n）ずつ処理
         let idx;
+
         while ((idx = buf.indexOf("\n")) >= 0) {
             const line = buf.slice(0, idx).trim();
             buf = buf.slice(idx + 1);
+
             if (!line) continue;
 
-            $("#raw").textContent = line;
+            if ($("#rawTest")) {
+                $("#rawTest").textContent = line;
+            }
 
             try {
                 const data = JSON.parse(line);
 
                 if (data.type === "dht") {
                     if (data.ok) {
-                        $("#temp").textContent = String(data.t);
-                        $("#hum").textContent = String(data.h);
+                        if ($("#tempTest"))
+                            $("#tempTest").textContent = String(data.t);
+                        if ($("#humTest"))
+                            $("#humTest").textContent = String(data.h);
                     }
                 }
 
@@ -60,34 +82,17 @@ async function readLoop() {
     }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    $("#sensorConnect")?.addEventListener("click", connectSerial);
-});
-
-// sensor.js の上の方に追加
-let rx = 0,
-    ry = 0,
-    rz = 0; // TODO: rz(=yaw) を追加
-
-const DEAD = 1200;
-const SCALE = 0.0000065;
-
-let biasX = 0,
-    biasY = 0,
-    biasZ = 0; // TODO: Zのバイアスも取る
-let biasCount = 0;
-const BIAS_N = 50;
-
 function applyRotation(gx, gy, gz) {
-    const viewer = document.querySelector("#viewer");
+    const viewer = $("#viewerTest");
     if (!viewer) return;
 
-    // TODO: 起動直後だけゼロ点合わせ（この間センサー動かさない）
+    // なぜ：起動直後の静止値を平均してドリフトを少し減らすため
     if (biasCount < BIAS_N) {
         biasX += gx;
         biasY += gy;
         biasZ += gz;
         biasCount++;
+
         if (biasCount === BIAS_N) {
             biasX /= BIAS_N;
             biasY /= BIAS_N;
@@ -104,11 +109,13 @@ function applyRotation(gx, gy, gz) {
     if (Math.abs(gy) < DEAD) gy = 0;
     if (Math.abs(gz) < DEAD) gz = 0;
 
-    // TODO: yaw(Z) を積分する（机上クルクルはココが動く）
     ry += gx * SCALE;
-    rx += -gy * SCALE; // ← ここだけマイナス
+    rx += -gy * SCALE;
     rz += gz * SCALE;
 
-    // model-viewer の orientation は Roll/Pitch/Yaw を3つ与える例が公式デモにある :contentReference[oaicite:1]{index=1}
     viewer.orientation = `${rx}rad ${ry}rad ${rz}rad`;
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+    $("#sensorConnectTest")?.addEventListener("click", connectSerial);
+});

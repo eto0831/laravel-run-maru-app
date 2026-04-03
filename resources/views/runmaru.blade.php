@@ -123,7 +123,7 @@
             font-size: 13px;
         }
     </style>
-    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js">
+    <script type="module" src="https://unpkg.com/@google/model-viewer@4.1.0/dist/model-viewer.min.js">
     </script>
 </head>
 
@@ -197,12 +197,31 @@
     <button id="btnStopTrack">記録停止</button>
     <button id="btnDrawWalkingRoute">歩行者ルートで結ぶ</button>
     <pre id="lineMapResult"></pre>
-    <pre id="mapDistance"></pre>
     <pre id="segmentDistance">この区間: 0m</pre>
     <pre id="trackStatus">停止中</pre>
     <pre id="mapDistance">距離: 0.00km</pre>
     <pre id="routeResult"></pre>
     <div id="testLineMap" style="width: 100%; height: 320px;"></div>
+
+    <hr>
+
+    <section id="sensorSectionTest" style="margin-top: 24px;">
+        <h2 style="font-size: 18px; margin-bottom: 12px;">センサーテスト</h2>
+
+        <div id="sensorBoxTest">
+            <button id="sensorConnectTest" class="navbtn">センサー接続</button>
+            <div>温度: <span id="tempTest">--</span> ℃</div>
+            <div>湿度: <span id="humTest">--</span> %</div>
+            <pre id="rawTest" style="white-space: pre-wrap;"></pre>
+        </div>
+
+        <div id="viewer-wrapTest" style="margin-top: 16px;">
+            <model-viewer id="viewerTest" src="/models/js_test.glb" camera-controls exposure="0.8"
+                environment-image="neutral" shadow-intensity="0.5" disable-tap interaction-prompt="none"
+                style="width: 100%; height: 400px;">
+            </model-viewer>
+        </div>
+    </section>
 
 
     @vite(['resources/js/app.js'])
@@ -210,6 +229,7 @@
     <script src="/js/utils.js"></script>
     <script src="/js/weather-test.js"></script>
     <script src="/js/map-test.js"></script>
+    <script src="/js/sensor-test.js"></script>
 </body>
 
 </html>
