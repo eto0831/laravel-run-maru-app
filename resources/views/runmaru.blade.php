@@ -128,7 +128,7 @@
 </head>
 
 <body>
-    <h1>ランニング記録 ⭕️</h1>
+    <h1 class="text-3xl font-bold text-red-500">ランニング記録 ⭕️</h1>
 
     <button id="toggleToday" class="bigbtn">今日を⭕️にする</button>
 
@@ -169,7 +169,7 @@
         </div>
     </div>
     <div id="sensorBox">
-        <button id="sensorConnect">センサー接続</button>
+        <button id="sensorConnect" class="navbtn">センサー接続</button>
         <div>温度: <span id="temp">--</span> ℃</div>
         <div>湿度: <span id="hum">--</span> %</div>
         <pre id="raw" style="white-space:pre-wrap;"></pre>
@@ -185,17 +185,17 @@
     <pre id="result"></pre>
 
     <hr>
-    <button id="btnShowMap">現在地マップ表示</button>
+    <button id="btnShowMap" class="navbtn">現在地マップ表示</button>
     <pre id="mapResult"></pre>
     <div id="testMap" style="width: 100%; height: 320px;"></div>
 
     <hr>
-    <button id="btnShowLineMap">線用マップ表示</button>
-    <button id="btnUndoPoint">Undo</button>
-    <button id="clearAllPoints">ClearAllPoints</button>
-    <button id="btnStartTrack">記録開始</button>
-    <button id="btnStopTrack">記録停止</button>
-    <button id="btnDrawWalkingRoute">歩行者ルートで結ぶ</button>
+    <button id="btnShowLineMap" class="navbtn">線用マップ表示</button>
+    <button id="btnUndoPoint" class="navbtn">Undo</button>
+    <button id="clearAllPoints" class="navbtn">ClearAllPoints</button>
+    <button id="btnStartTrack" class="navbtn">記録開始</button>
+    <button id="btnStopTrack" class="navbtn">記録停止</button>
+    <button id="btnDrawWalkingRoute" class="navbtn">歩行者ルートで結ぶ</button>
     <pre id="lineMapResult"></pre>
     <pre id="segmentDistance">この区間: 0m</pre>
     <pre id="trackStatus">停止中</pre>
@@ -222,9 +222,34 @@
             </model-viewer>
         </div>
     </section>
+    {{-- <button onclick="connect()">接続</button>
+<pre id="log"></pre>
+
+<script>
+let characteristic;
+
+async function connect() {
+  const device = await navigator.bluetooth.requestDevice({
+    filters: [{ namePrefix: "ETO" }],
+    optionalServices: ["12345678-1234-1234-1234-1234567890ab"]
+  });
+
+  const server = await device.gatt.connect();
+  const service = await server.getPrimaryService("12345678-1234-1234-1234-1234567890ab");
+  characteristic = await service.getCharacteristic("abcd1234-5678-1234-5678-abcdef123456");
+
+  await characteristic.startNotifications();
+
+  characteristic.addEventListener("characteristicvaluechanged", (event) => {
+    const value = new TextDecoder().decode(event.target.value);
+    document.getElementById("log").textContent += value + "\n";
+  });
+}
+</script> --}}
+    
 
 
-    @vite(['resources/js/app.js'])
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script src="/js/config.js"></script>
     <script src="/js/utils.js"></script>
     <script src="/js/weather-test.js"></script>

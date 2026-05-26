@@ -1,12 +1,9 @@
-let port;
-let reader;
-
 let rx = 0;
 let ry = 0;
 let rz = 0;
 
 const DEAD = 1200;
-const SCALE = 0.0000065;
+const SCALE = 0.000015;
 
 let biasX = 0;
 let biasY = 0;
@@ -14,79 +11,89 @@ let biasZ = 0;
 let biasCount = 0;
 const BIAS_N = 50;
 
-// const $ = (q) => document.querySelector(q);
+const sensorQs = (q) => document.querySelector(q);
 
-async function connectSerial() {
-    // なぜ：対応ブラウザか確認して落ち方をわかりやすくする
-    if (!("serial" in navigator)) {
-        alert("Web Serial非対応です。Chrome / Edgeで開いてね。");
+const SERVICE_UUID = "12345678-1234-1234-1234-1234567890ab";
+const CHARACTERISTIC_UUID = "abcd1234-5678-1234-5678-abcdef123456";
+
+async function connectBle() {
+    if (!("bluetooth" in navigator)) {
+        alert("Web Bluetooth非対応です。Android Chromeで開いてね。");
         return;
     }
 
     try {
-        port = await navigator.serial.requestPort();
-        await port.open({ baudRate: 115200 });
+        sensorQs("#rawTest").textContent = "接続待機中...";
 
-        const decoder = new TextDecoderStream();
-        port.readable.pipeTo(decoder.writable);
-        reader = decoder.readable.getReader();
+        const device = await navigator.bluetooth.requestDevice({
+            filters: [{ namePrefix: "ETO" }],
+            optionalServices: [SERVICE_UUID],
+        });
 
-        readLoop();
+        sensorQs("#rawTest").textContent = "接続中...";
+
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService(SERVICE_UUID);
+        const characteristic =
+            await service.getCharacteristic(CHARACTERISTIC_UUID);
+
+        await characteristic.startNotifications();
+
+        characteristic.addEventListener(
+            "characteristicvaluechanged",
+            (event) => {
+                const line = new TextDecoder()
+                    .decode(event.target.value)
+                    .trim();
+                handleSensorLine(line);
+            },
+        );
+
+        sensorQs("#rawTest").textContent = "BLE connected";
+
+        device.addEventListener("gattserverdisconnected", () => {
+            sensorQs("#rawTest").textContent = "BLE disconnected";
+        });
     } catch (err) {
         console.error(err);
-        alert("シリアル接続に失敗しました");
+        alert("BLE接続に失敗しました");
+        sensorQs("#rawTest").textContent = String(err);
     }
 }
 
-async function readLoop() {
-    let buf = "";
+function handleSensorLine(line) {
+    if (!line) return;
 
-    while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        if (!value) continue;
+    sensorQs("#rawTest").textContent = line;
 
-        buf += value;
+    try {
+        const data = JSON.parse(line);
 
-        let idx;
-
-        while ((idx = buf.indexOf("\n")) >= 0) {
-            const line = buf.slice(0, idx).trim();
-            buf = buf.slice(idx + 1);
-
-            if (!line) continue;
-
-            if ($("#rawTest")) {
-                $("#rawTest").textContent = line;
+        if (data.type === "dht") {
+            if (data.ok) {
+                sensorQs("#tempTest").textContent = String(data.t);
+                sensorQs("#humTest").textContent = String(data.h);
             }
-
-            try {
-                const data = JSON.parse(line);
-
-                if (data.type === "dht") {
-                    if (data.ok) {
-                        if ($("#tempTest"))
-                            $("#tempTest").textContent = String(data.t);
-                        if ($("#humTest"))
-                            $("#humTest").textContent = String(data.h);
-                    }
-                }
-
-                if (data.type === "mpu") {
-                    applyRotation?.(data.gx, data.gy, data.gz);
-                }
-            } catch (err) {
-                // JSONじゃない行は無視
-            }
+            return;
         }
+
+        if (data.type === "mpu") {
+            applyRotation(data.gx, data.gy, data.gz);
+            return;
+        }
+    } catch (err) {
+        console.log("JSON parse error:", line);
     }
 }
 
 function applyRotation(gx, gy, gz) {
-    const viewer = $("#viewerTest");
-    if (!viewer) return;
+    const viewer = sensorQs("#viewerTest");
 
-    // なぜ：起動直後の静止値を平均してドリフトを少し減らすため
+    if (!viewer) {
+        console.log("viewerTest not found");
+        return;
+    }
+
     if (biasCount < BIAS_N) {
         biasX += gx;
         biasY += gy;
@@ -97,7 +104,9 @@ function applyRotation(gx, gy, gz) {
             biasX /= BIAS_N;
             biasY /= BIAS_N;
             biasZ /= BIAS_N;
+            console.log("bias fixed", biasX, biasY, biasZ);
         }
+
         return;
     }
 
@@ -117,5 +126,5 @@ function applyRotation(gx, gy, gz) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    $("#sensorConnectTest")?.addEventListener("click", connectSerial);
+    sensorQs("#sensorConnectTest")?.addEventListener("click", connectBle);
 });
